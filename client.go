@@ -15,9 +15,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	logging "github.com/adminium/logger"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	logging "github.com/ipfs/go-log/v2"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/propagation"
 	"golang.org/x/xerrors"
@@ -32,7 +32,7 @@ var (
 	errorType   = reflect.TypeOf(new(error)).Elem()
 	contextType = reflect.TypeOf(new(context.Context)).Elem()
 
-	log = logging.Logger("rpc")
+	log = logging.NewLogger("rpc")
 
 	_defaultHTTPClient = &http.Client{
 		Transport: &http.Transport{

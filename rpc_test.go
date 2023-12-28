@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
+	logging "github.com/adminium/logger"
 	"github.com/gorilla/websocket"
-	logging "github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/xerrors"

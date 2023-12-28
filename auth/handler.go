@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	logging "github.com/ipfs/go-log/v2"
+	logging "github.com/adminium/logger"
 )
 
-var log = logging.Logger("auth")
+var log = logging.NewLogger("auth")
 
 type Handler struct {
 	Verify func(ctx context.Context, token string) ([]Permission, error)

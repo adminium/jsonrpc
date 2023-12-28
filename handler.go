@@ -9,6 +9,7 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/adminium/jsonrpc/metrics"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
@@ -16,8 +17,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/go-jsonrpc/metrics"
 )
 
 type RawParams json.RawMessage

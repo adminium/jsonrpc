@@ -8,10 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/adminium/jsonrpc"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
-
-	"github.com/filecoin-project/go-jsonrpc"
 )
 
 type ReaderHandler struct {

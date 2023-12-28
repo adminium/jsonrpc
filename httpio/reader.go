@@ -11,14 +11,13 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/adminium/jsonrpc"
+	logging "github.com/adminium/logger"
 	"github.com/google/uuid"
-	logging "github.com/ipfs/go-log/v2"
 	"golang.org/x/xerrors"
-
-	"github.com/filecoin-project/go-jsonrpc"
 )
 
-var log = logging.Logger("rpc")
+var log = logging.NewLogger("rpc")
 
 func ReaderParamEncoder(addr string) jsonrpc.Option {
 	return jsonrpc.WithParamEncoder(new(io.Reader), func(value reflect.Value) (reflect.Value, error) {
