@@ -476,6 +476,11 @@ func (s *handler) handle(ctx context.Context, req request, w func(func(io.Writer
 				resp.Message = r.Message
 				setRPCHeaderInternalServerError(w)
 			}
+
+			// correct the error code to properly check the API execution status
+			if resp.Code == 0 {
+				resp.Code = -1
+			}
 		}
 	}
 
