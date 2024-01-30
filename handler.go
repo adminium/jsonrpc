@@ -64,6 +64,17 @@ type request struct {
 // Configured by WithMaxRequestSize.
 const DEFAULT_MAX_REQUEST_SIZE = 100 << 20 // 100 MiB
 
+type Warning struct {
+	Code    int
+	Message string
+}
+
+func (w *Warning) Error() string {
+	return w.Message
+}
+
+type Error = respError
+
 type respError struct {
 	Code    ErrorCode       `json:"code"`
 	Message string          `json:"message"`
@@ -102,11 +113,15 @@ func (e *respError) val(errors *Errors) reflect.Value {
 	return reflect.ValueOf(e)
 }
 
+type Response = response
+
 type response struct {
-	Jsonrpc string      `json:"jsonrpc"`
+	Jsonrpc string      `json:"jsonrpc,omitempty"`
 	Result  interface{} `json:"result,omitempty"`
-	ID      interface{} `json:"id"`
+	ID      interface{} `json:"id,omitempty"`
 	Error   *respError  `json:"error,omitempty"`
+	Code    int         `json:"code,omitempty"`    // different from error code, it is used here for warning
+	Message string      `json:"message,omitempty"` // different from error message, it is used here for warning
 }
 
 type handler struct {
@@ -337,6 +352,10 @@ func (s *handler) handle(ctx context.Context, req request, w func(func(io.Writer
 	ctx, _ = tag.New(ctx, tag.Insert(metrics.RPCMethod, req.Method))
 	defer span.End()
 
+	if req.ID != nil {
+		setRPCHeaderID(w, fmt.Sprintf("%v", req.ID))
+	}
+
 	handler, ok := s.methods[req.Method]
 	if !ok {
 		aliasTo, ok := s.aliasedMethods[req.Method]
@@ -350,6 +369,7 @@ func (s *handler) handle(ctx context.Context, req request, w func(func(io.Writer
 			return
 		}
 	}
+	setRPCHeaderHandler(w, req.Method)
 
 	outCh := handler.valOut != -1 && handler.handlerFunc.Type().Out(handler.valOut).Kind() == reflect.Chan
 	defer done(outCh)
@@ -426,24 +446,36 @@ func (s *handler) handle(ctx context.Context, req request, w func(func(io.Writer
 		stats.Record(ctx, metrics.RPCRequestError.M(1))
 		return
 	}
-	if req.ID == nil {
-		return // notification
-	}
+	//if req.ID == nil {
+	//	return // notification
+	//}
 
 	// /////////////////
 
 	resp := response{
-		Jsonrpc: "2.0",
-		ID:      req.ID,
+		//Jsonrpc: "2.0",
+		ID: req.ID,
 	}
 
 	if handler.errOut != -1 {
 		err := callResult[handler.errOut].Interface()
 		if err != nil {
-			log.Warnf("error in RPC call to '%s': %+v", req.Method, err)
+			//log.Warnf("error in RPC call to '%s': %+v", req.Method, err)
 			stats.Record(ctx, metrics.RPCResponseError.M(1))
 
-			resp.Error = s.createError(err.(error))
+			setRPCHeaderError(w, err.(error).Error())
+
+			if r, ok := err.(*Warning); ok {
+				resp.Code = r.Code
+				resp.Message = r.Message
+				setRPCHeaderBadRequest(w)
+			} else {
+				r := s.createError(err.(error))
+				//resp.Error = r
+				resp.Code = int(r.Code)
+				resp.Message = r.Message
+				setRPCHeaderInternalServerError(w)
+			}
 		}
 	}
 
@@ -482,6 +514,8 @@ func (s *handler) handle(ctx context.Context, req request, w func(func(io.Writer
 	if resp.Error != nil && nonZero {
 		log.Errorw("error and res returned", "request", req, "r.err", resp.Error, "res", res)
 	}
+
+	setRPCHeaderContentType(w)
 
 	withLazyWriter(w, func(w io.Writer) {
 		if err := json.NewEncoder(w).Encode(resp); err != nil {

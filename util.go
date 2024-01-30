@@ -3,10 +3,17 @@ package jsonrpc
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
+	"net/http"
 	"reflect"
 	"time"
+)
+
+var (
+	StatusBadRequest          = http.StatusBadRequest
+	StatusInternalServerError = http.StatusInternalServerError
 )
 
 type param struct {
@@ -78,4 +85,48 @@ func (b *backoff) next(attempt int) time.Duration {
 	}
 
 	return delay
+}
+
+func responseWriter(f func(func(io.Writer)), c func(w http.ResponseWriter)) {
+	f(func(w io.Writer) {
+		if hw, ok := w.(http.ResponseWriter); ok {
+			c(hw)
+		}
+	})
+}
+
+func setRPCHeaderID(f func(func(io.Writer)), id string) {
+	responseWriter(f, func(w http.ResponseWriter) {
+		w.Header().Set(X_RPC_ID, id)
+	})
+}
+
+func setRPCHeaderHandler(f func(func(io.Writer)), method string) {
+	responseWriter(f, func(w http.ResponseWriter) {
+		w.Header().Set(X_RPC_Handler, method)
+	})
+}
+
+func setRPCHeaderError(f func(func(io.Writer)), err string) {
+	responseWriter(f, func(w http.ResponseWriter) {
+		w.Header().Set(X_RPC_ERROR, err)
+	})
+}
+
+func setRPCHeaderContentType(f func(func(io.Writer))) {
+	responseWriter(f, func(w http.ResponseWriter) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	})
+}
+
+func setRPCHeaderBadRequest(f func(func(io.Writer))) {
+	responseWriter(f, func(w http.ResponseWriter) {
+		w.WriteHeader(StatusBadRequest)
+	})
+}
+
+func setRPCHeaderInternalServerError(f func(func(io.Writer))) {
+	responseWriter(f, func(w http.ResponseWriter) {
+		w.WriteHeader(StatusInternalServerError)
+	})
 }

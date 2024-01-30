@@ -7,6 +7,9 @@ import (
 )
 
 const eTempWSError = -1111111
+const X_RPC_ID = "X-RPC-ID"
+const X_RPC_ERROR = "X-RPC-Error"
+const X_RPC_Handler = "X-RPC-Handler"
 
 type RPCConnectionError struct {
 	err error
