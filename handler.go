@@ -479,7 +479,7 @@ func (s *handler) handle(ctx context.Context, req request, w func(func(io.Writer
 
 			// correct the error code to properly check the API execution status
 			if resp.Code == 0 {
-				resp.Code = -1
+				resp.Code = 2
 			}
 		}
 	}
